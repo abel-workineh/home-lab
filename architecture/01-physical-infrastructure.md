@@ -70,10 +70,6 @@ The two drives are physically separate devices even though they have the same mo
 
 This distinction became important during the Proxmox installation because one drive contained Windows and the other was authorized to be repurposed for the lab.
 
-The detailed storage investigation is documented separately in:
-
-`hardware/02-storage-discovery.md`
-
 ---
 
 ## Operating Systems
