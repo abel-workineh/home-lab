@@ -52,7 +52,7 @@ This approach allows individual components to be tested before adding additional
 
 The primary compute platform is the ASUS ExpertCenter PN52.
 
-The PN52 currently contains two independent operating environments:
+The PN52 contains two independent operating environments:
 
 ```text
 ASUS PN52
@@ -66,7 +66,7 @@ ASUS PN52
         └── Lab platform
 ```
 
-Windows and Proxmox are installed on separate physical NVMe drives.
+Windows and Proxmox use separate physical NVMe drives.
 
 This provides physical separation between the normal desktop environment and the virtualization environment.
 
@@ -84,29 +84,22 @@ The current physical infrastructure includes:
 - MediaTek Wi-Fi 6E
 - USB Ethernet
 - MikroTik hEX-S
-- Ruckus wireless access point running Unleashed
-- Existing home network
-- MoCA infrastructure planned for future use
+- Ruckus R730 wireless access point running Ruckus Unleashed
+- ScreenBeam ECB6250 MoCA adapters
+- Existing coax infrastructure
+- Existing home network infrastructure
 
-Not all components are currently connected to the lab.
+Not all physical components are currently integrated into the lab.
+
+The distinction between equipment that physically exists and equipment that has been integrated into the lab is intentional.
 
 ---
 
 ## Windows Environment
 
-Windows 11 25H2 is installed on one of the physical NVMe drives.
+Windows 11 25H2 is installed on one physical NVMe drive.
 
-Verified version:
-
-```text
-Windows 11
-Version 25H2
-OS Build 26200.9168
-```
-
-Windows is configured as the default UEFI boot operating system.
-
-This was an intentional design decision because the PN52 continues to serve as a normal Windows computer.
+Windows remains the default UEFI boot operating system because the PN52 continues to serve as a normal Windows computer.
 
 The Windows installation is independent of the Proxmox installation because the operating systems reside on separate physical NVMe drives.
 
@@ -116,29 +109,29 @@ The Windows installation is independent of the Proxmox installation because the 
 
 Proxmox VE 9.2-1 is installed on the second physical NVMe drive.
 
-The Proxmox host is configured with:
+The Proxmox host uses private management addressing.
+
+The actual values are intentionally excluded from this public documentation:
 
 ```text
-Hostname: pve
-Management address: private IPv4 address
-Gateway: private network gateway
-DNS: configured private-network DNS resolver
-Search domain: local/private domain
+Hostname: <LAB-HOSTNAME>
+Management address: <LAB-MANAGEMENT-IP>
+Gateway: <LAB-GATEWAY-IP>
+DNS: <LAB-DNS-SERVER>
+Search domain: <LAB-DOMAIN>
 ```
 
-The Proxmox management interface was successfully accessed through the configured management address on TCP port `8006`.
+The Proxmox management interface was successfully accessed through TCP port `8006`.
 
 This verified that the Proxmox management service was operational.
 
-The actual management address and local DNS information are intentionally omitted from this public documentation.
+Actual home-network addressing, DNS information, local hostnames, and other private network identifiers are intentionally omitted from this repository.
 
 ---
 
 ## Proxmox Network Architecture
 
-The Proxmox installer created a Linux bridge named:
-
-`vmbr0`
+The Proxmox installation created a Linux bridge named `vmbr0`.
 
 The current relationship is:
 
@@ -156,15 +149,11 @@ Physical Realtek 2.5 GbE
           └── Future Virtual Machines
 ```
 
-This is an important distinction.
-
 `nic0` represents the physical network interface.
 
-`vmbr0` is a software-defined Linux bridge.
+`vmbr0` is a software-defined Linux bridge that provides Layer 2 connectivity between the physical interface, the Proxmox host, and future virtual machines.
 
-The bridge behaves conceptually like a virtual Ethernet switch.
-
-Virtual machines can eventually connect their virtual network interfaces to `vmbr0`.
+Only the Realtek 2.5 GbE interface is currently assigned to the Proxmox bridge.
 
 ---
 
@@ -181,7 +170,7 @@ The existence of `vmbr0` does not automatically mean that the lab has:
 
 Those capabilities require additional configuration.
 
-At the current stage, `vmbr0` provides a basic Layer 2 connection between the Proxmox host and the physical network interface.
+At the current stage, `vmbr0` provides basic Layer 2 connectivity.
 
 Additional network functionality will be introduced deliberately rather than assumed.
 
@@ -189,7 +178,7 @@ Additional network functionality will be introduced deliberately rather than ass
 
 ## Current Proxmox Network Interfaces
 
-The Proxmox host currently identifies the following network devices:
+The currently identified Proxmox network interfaces are:
 
 | Interface | Type | Current Role |
 |---|---|---|
@@ -199,8 +188,6 @@ The Proxmox host currently identifies the following network devices:
 | `wlp3s0` | Wi-Fi interface | Not used for Proxmox management |
 | `vmbr0` | Linux bridge | Proxmox management network |
 
-Only `nic0` is currently connected to `vmbr0`.
-
 The additional interfaces have not been assigned a lab networking role.
 
 ---
@@ -209,13 +196,13 @@ The additional interfaces have not been assigned a lab networking role.
 
 The Proxmox management network currently uses a private IPv4 subnet.
 
-The Proxmox host has a static management address within that subnet.
+The Proxmox host has a static management address within that network.
 
 The configured gateway is the corresponding private network gateway.
 
-These addresses were verified during the Proxmox configuration process but are intentionally not published in this repository.
+These values were verified during the Proxmox configuration process but are intentionally not published in this repository.
 
-This is an important distinction between documenting a technical configuration and publishing the actual addressing used by a private home network.
+This demonstrates the difference between documenting a technical configuration and publishing the actual addressing used by a private home network.
 
 ---
 
@@ -223,13 +210,11 @@ This is an important distinction between documenting a technical configuration a
 
 Before the physical MikroTik connection was available, the PN52 was directly connected to another laptop using Ethernet.
 
-The laptop's Ethernet adapter was temporarily configured with an address in the same private management subnet as the Proxmox host.
+The laptop was temporarily configured within the same private management network as the Proxmox host.
 
-The laptop successfully reached the Proxmox management address.
+The laptop successfully reached the Proxmox management interface through TCP port `8006`.
 
-The Proxmox web interface was then successfully accessed through TCP port `8006`.
-
-This test verified several important components independently of the MikroTik:
+The test path was:
 
 ```text
 Laptop
@@ -245,7 +230,7 @@ vmbr0
 Proxmox Management
 ```
 
-This demonstrated that the Proxmox management networking was functional.
+This demonstrated that Proxmox management networking was functional independently of the MikroTik and Internet connectivity.
 
 The temporary private addresses used during this test are intentionally omitted.
 
@@ -257,7 +242,7 @@ The direct Ethernet test isolated the Proxmox host from the rest of the home net
 
 This allowed the following question to be answered:
 
-> Can the Proxmox host communicate over Ethernet and provide its management interface without relying on the MikroTik or Internet connectivity?
+> Can Proxmox provide a functioning management interface over Ethernet without relying on the MikroTik or Internet connectivity?
 
 The successful connectivity and web interface connection demonstrated that it could.
 
@@ -269,35 +254,37 @@ Rather than troubleshooting multiple systems simultaneously, the test reduced th
 
 ## MikroTik Network
 
-The MikroTik hEX-S is intended to become the primary router for the lab environment.
+The MikroTik hEX-S is part of the existing physical networking environment and is intended to become an important component of the lab's future networking architecture.
 
-Previously verified configuration includes:
+Previously verified characteristics include:
 
-- A WAN-facing interface
-- A private bridge interface
-- DHCP service for the private network
+- WAN-facing interface
+- Existing LAN bridge
+- DHCP service
 - DNS configuration
+- Bridge-based LAN architecture
+- No currently implemented VLAN configuration
 
-The MikroTik configuration will not be assumed beyond the values that have been explicitly verified.
+The MikroTik should not be treated as having a completed lab configuration.
 
-In particular, the following have not yet been treated as established lab configuration:
+The following remain future work:
 
-- VLANs
-- Firewall rules
-- Additional routes
-- Additional subnets
-- Detailed interface membership
-- Final DHCP scope configuration
+- Lab VLANs
+- Lab-specific firewall rules
+- Additional lab routes
+- Additional lab subnets
+- Lab-specific DHCP scopes
+- Network segmentation
 
-These will be discovered and documented when required.
-
-Actual home-network IP addressing and DNS values are intentionally excluded from this repository.
+Actual home-network IP addresses and DNS values are intentionally excluded from this repository.
 
 ---
 
 ## Physical Connection to the MikroTik
 
-The PN52 is not currently physically connected to the MikroTik.
+The PN52 is not currently connected to the MikroTik through the intended lab path.
+
+The ScreenBeam ECB6250 MoCA adapters are physically available.
 
 The intended physical path is:
 
@@ -306,11 +293,11 @@ MikroTik hEX-S
       │
    Ethernet
       │
- MoCA Adapter
+MoCA Adapter
       │
-    Coax
+     Coax
       │
- MoCA Adapter
+MoCA Adapter
       │
    Ethernet
       │
@@ -323,64 +310,92 @@ PN52 Realtek 2.5GbE
    Proxmox
 ```
 
-The required MoCA adapters are not currently available.
+The MoCA path has not yet been implemented and verified end-to-end.
 
-Therefore, this path is a planned architecture rather than an implemented connection.
+Before connecting the adapters, the existing coaxial infrastructure should be assessed to determine:
 
----
-
-## Existing Home Network
-
-The home network exists independently of the lab environment.
-
-The Ruckus wireless access point runs Ruckus Unleashed and currently provides Wi-Fi connectivity for devices on the home network.
-
-The access point is therefore part of the physical networking environment but is not currently part of the implemented lab topology.
-
-This distinction prevents the architecture from incorrectly implying that wireless VLANs, lab SSIDs, or wireless segmentation have already been implemented.
+- Which coax outlets are interconnected
+- The splitter arrangement
+- The cable path between the intended locations
+- Whether additional splitters or unused branches are present
+- Whether the coax path is suitable for MoCA
 
 ---
 
-## Ruckus Access Point
+## Ruckus Wireless Access Point
 
-The Ruckus AP may eventually become useful for lab experiments involving:
+The environment includes a Ruckus R730 wireless access point running Ruckus Unleashed.
 
-- SSIDs
+The R730 is currently part of the existing home network and provides Wi-Fi connectivity for client devices.
+
+The access point is wired rather than operating through mesh.
+
+Verified operational characteristics include:
+
+- Ruckus Unleashed is operational
+- Wireless service is functioning
+- The AP is wired
+- Mesh is disabled
+- Internal Gateway is disabled
+- Configuration backup has been created and confirmed
+- Password recovery has been configured and confirmed
+
+The R730 is not currently integrated into the lab's logical network architecture.
+
+Potential future uses include:
+
+- Wireless client testing
+- SSID-to-VLAN mapping
+- Segmented wireless networks
+- Wireless-to-wired connectivity testing
+- Network troubleshooting
+
+These are future possibilities and should not be represented as implemented.
+
+---
+
+## MoCA Infrastructure
+
+The lab includes a pair of ScreenBeam ECB6250 MoCA 2.5 adapters.
+
+The adapters provide a potential Ethernet transport path over the existing coax infrastructure.
+
+The adapters are physically available, but the end-to-end path has not yet been verified.
+
+MoCA provides physical network transport.
+
+It does not provide:
+
 - VLANs
-- Wireless client isolation
-- Wireless-to-wired connectivity
+- Routing
+- Firewalling
 - Network segmentation
-- Authentication
-- Troubleshooting Layer 2 and Layer 3 connectivity
+- IP addressing
 
-At the current stage, none of these lab functions should be considered implemented.
-
-The AP currently performs its existing home-network role.
+Those functions belong to the logical networking architecture.
 
 ---
 
 ## Current Logical Network Model
 
-The current known network relationship can be represented as:
+The current known relationship is:
 
 ```text
                     Existing Home Network
                             │
-                            │
-                      Ruckus AP
-                   Unleashed Wi-Fi
+                      Ruckus R730
+                   Ruckus Unleashed
                             │
                       Home Clients
 
 
                     MikroTik hEX-S
                             │
-                    Private Network
+                    Existing LAN
                             │
-                     [Not Connected]
+                    Future Lab Path
                             │
-                       Future MoCA
-                            │
+                       MoCA Transport
                             │
                      ASUS PN52
                             │
@@ -390,14 +405,14 @@ The current known network relationship can be represented as:
                             │
                           vmbr0
                             │
-                    Private Management
-                            │
-                         Proxmox
+                    Proxmox Management
 ```
 
-The diagram represents the current understanding of the environment.
+The diagram deliberately does not show VLANs, firewall zones, additional subnets, or virtual machines because those have not yet been implemented.
 
-It deliberately does not show VLANs, firewall zones, additional subnets, or virtual machines because those have not yet been implemented.
+The Ruckus AP remains part of the existing home network.
+
+The MoCA path is physically available but has not yet been connected and verified end-to-end.
 
 Actual home-network addressing is intentionally omitted.
 
@@ -405,9 +420,9 @@ Actual home-network addressing is intentionally omitted.
 
 ## Virtual Machine Architecture
 
-No production or lab VM workloads have yet been deployed.
+No lab virtual machines have yet been deployed.
 
-The next major virtualization phase is to create the first VM.
+The next virtualization phase is to create the first VM.
 
 The intended conceptual architecture is:
 
@@ -425,7 +440,7 @@ Physical PN52
 
 Each VM will receive virtual resources from Proxmox.
 
-These resources may include:
+These may include:
 
 - Virtual CPU
 - Virtual memory
@@ -440,9 +455,9 @@ The exact allocation will be determined when the first VM is selected and deploy
 
 The lab does not currently have a completed network isolation architecture.
 
-A separate virtual network does not automatically provide complete security isolation.
+A virtual network alone does not automatically provide complete security isolation.
 
-True isolation may require coordination between:
+Future isolation may require coordination between:
 
 - Layer 2 topology
 - VLANs
@@ -452,13 +467,11 @@ True isolation may require coordination between:
 - VM network configuration
 - Gateway placement
 
-These concepts will be introduced incrementally.
+These capabilities will be introduced incrementally.
 
 ---
 
 ## Current Architecture Boundaries
-
-The following boundaries currently exist.
 
 ### Physical Storage Boundary
 
@@ -480,67 +493,47 @@ Other network interfaces are not currently part of the Proxmox network configura
 
 ### Home Network Boundary
 
-The Ruckus AP continues to serve the existing home network and has not yet been integrated into the lab.
+The Ruckus AP continues to serve the existing home network and has not been integrated into the lab.
 
-### Lab Router Boundary
+### Lab Network Boundary
 
-The MikroTik is intended to provide the future physical network gateway for the lab, but the physical connection has not yet been established.
+The MikroTik and MoCA infrastructure are physically available for future lab integration, but the intended MikroTik-to-PN52 path has not yet been established and verified.
 
 ---
 
 ## Discovery and Decision Process
 
-The current architecture was developed by answering individual infrastructure questions rather than implementing a complete design immediately.
+The architecture was developed by answering individual infrastructure questions rather than implementing a complete design immediately.
 
-Examples include:
+### Physical Storage
 
-### Question
+The two identical NVMe drives were identified using system information before Proxmox installation.
 
-Which physical disk can safely be used for Proxmox?
+The drive containing Windows was preserved.
 
-### Investigation
+The second physical drive was selected for Proxmox.
 
-The two identical NVMe drives were identified using model, size, disk number, partition layout, and unique hardware identifiers.
+### Proxmox Management Networking
 
-### Decision
+A direct Ethernet connection between the PN52 and another laptop was used to test Proxmox networking independently of the MikroTik.
 
-The drive containing the existing Windows installation was preserved.
+The laptop successfully reached the Proxmox management interface.
 
-The other drive was authorized for Proxmox.
+This verified the Proxmox network path before introducing additional infrastructure.
 
----
+### Primary Network Interface
 
-### Question
+The PN52's network interfaces were identified.
 
-Can Proxmox provide a functioning management network without the MikroTik?
-
-### Investigation
-
-The PN52 was directly connected to another laptop using Ethernet.
-
-### Result
-
-The laptop successfully reached the Proxmox management address and accessed the Proxmox web interface.
-
-### Decision
-
-The Proxmox management network was verified independently before physical integration with the MikroTik.
-
----
-
-### Question
-
-Which physical interface should provide the primary Proxmox connection?
-
-### Investigation
-
-The PN52's physical interfaces were identified.
-
-### Decision
-
-The Realtek 2.5 GbE interface was selected as the intended primary wired Proxmox interface.
+The Realtek 2.5 GbE interface was selected as the primary wired Proxmox interface.
 
 Wi-Fi was not selected as the primary infrastructure interface.
+
+### Future Physical Transport
+
+The ScreenBeam ECB6250 adapters and existing coax infrastructure were identified as the intended physical transport between the MikroTik and PN52.
+
+The coax path still requires verification before the MoCA connection is considered implemented.
 
 ---
 
@@ -551,7 +544,6 @@ Wi-Fi was not selected as the primary infrastructure interface.
 - Windows 11 25H2
 - Proxmox VE 9.2-1
 - Separate physical storage for Windows and Proxmox
-- Proxmox hostname `pve`
 - Private IPv4 management addressing
 - Linux bridge `vmbr0`
 - Realtek 2.5 GbE connected to `vmbr0`
@@ -559,32 +551,39 @@ Wi-Fi was not selected as the primary infrastructure interface.
 - Direct Ethernet management test
 - Windows as default UEFI boot OS
 
-### Verified but Not Currently Connected
+### Verified Physical Infrastructure
 
+- ASUS ExpertCenter PN52
 - MikroTik hEX-S
-- Ruckus wireless access point as part of the home network
-- Future MoCA path
+- Ruckus R730
+- ScreenBeam ECB6250 MoCA adapters
+- Existing coax infrastructure
+- Existing home network infrastructure
+- MikroTik bridge-based LAN architecture
+- Current absence of VLAN configuration
+- Ruckus Unleashed operation
+- Ruckus wired operation
+- MoCA adapters available for planned physical integration
 
 ### Not Yet Implemented
 
 - First VM
 - VM operating-system deployment
-- VM networking
-- Physical MikroTik integration
-- Internet connectivity through the MikroTik
+- VM networking beyond the existing Proxmox bridge
+- Physical MikroTik-to-PN52 integration
+- End-to-end MoCA connectivity
 - VLANs
 - Routing experiments
-- Firewall policies
+- Lab-specific firewall policies
 - Network segmentation
 - Wireless lab integration
-- Advanced testing
-- Troubleshooting projects
+- Network isolation testing
+- Advanced connectivity and failure testing
+- Infrastructure automation
 
 ---
 
 ## Architectural Principles
-
-The lab will follow several principles as it develops.
 
 ### Verify Before Configuring
 
@@ -604,22 +603,37 @@ New technologies should be added only after the underlying layer has been demons
 
 ### Preserve Existing Functionality
 
-The home Windows environment and existing home network should remain functional while the lab is developed.
+The existing Windows environment and home network should remain functional while the lab is developed.
 
 ### Document Decisions, Not Just Commands
 
-Documentation should explain why a configuration was selected, what alternatives were considered when relevant, and how the result was verified.
+Documentation should explain why a configuration was selected and how the result was verified.
 
 ---
 
 ## Next Step
 
-The next major lab milestone is the deployment of the first virtual machine.
+The next implementation milestone is to verify the existing coax path before connecting the ScreenBeam ECB6250 adapters.
 
-Before creating the VM, the operating-system ISO must be selected and verified.
+The intended sequence is:
 
-The VM should not be created until the operating system, intended purpose, and required resources are understood.
+```text
+Verify Coax Path
+       ↓
+Connect MoCA
+       ↓
+Verify Ethernet Link
+       ↓
+Verify Proxmox Connectivity
+       ↓
+Document Actual Result
+       ↓
+Deploy First VM
+       ↓
+Develop Virtual Networking
+```
 
-The next virtualization documentation file will be:
+No VLAN configuration, wireless segmentation, or other future network architecture should be represented as implemented until it has actually been configured and verified.
 
-`virtualization/01-proxmox-installation.md`
+After the physical path is verified, the first VM can be deployed using the verified Proxmox environment.
+```
